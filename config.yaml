@@ -1,6 +1,6 @@
 name: "Minecraft Java Server"
 description: "Minecraft Java Edition Server tailored for Home Assistant with worlds accessible via SFTP"
-version: "1.0.1"
+version: "1.0.2"
 slug: "minecraft_java_server"
 url: https://github.com/sjauijn/minecraft-java-server-HAOS/
 apparmor: true

@@ -1,3 +1,11 @@
+## 1.0.2 - 2026-06-20
+
+### Fixed
+
+- AppArmor profile still blocked execution of `mc-image-helper`'s actual installation: the rule `/usr/share/mc-image-helper*/**` only matched paths *inside* the versioned directory (e.g. `/usr/share/mc-image-helper-1.61.0/bin/...`), not the bare directory itself or the `/usr/share/mc-image-helper` symlink that `/usr/local/bin/mc-image-helper` ultimately points to. The launcher script's own symlink-resolution logic was being denied, so it printed only its name/version and exited without installing anything (`❌ No server jar found after installation step.`)
+- Added missing `readlink`/`realpath` to the AppArmor profile, used by the generated launcher script to resolve its own location through the symlink chain
+- `java-entry.sh` now reports `mc-image-helper`'s actual exit code on failure instead of always showing the generic "no jar found" message, to make future AppArmor/permission regressions easier to diagnose directly from the log
+
 ## 1.0.1 - 2026-06-20
 
 ### Fixed

@@ -204,8 +204,11 @@ run_via_mc_helper() {
 }
 
 if ! run_via_mc_helper; then
-  echo "❌ Failed to install/resolve Minecraft server software for TYPE=${TYPE} VERSION=${VERSION}"
+  helper_exit=$?
+  echo "❌ Failed to install/resolve Minecraft server software for TYPE=${TYPE} VERSION=${VERSION} (mc-image-helper exit code ${helper_exit})"
   echo "   Check the Type/Version configuration in the add-on UI."
+  echo "   If mc-image-helper printed only its own name/version above with no further output,"
+  echo "   it failed to even start (e.g. permission/AppArmor issue) rather than failing the install itself."
   tail -f /dev/null
 fi
 
