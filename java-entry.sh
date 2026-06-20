@@ -3,6 +3,13 @@ set -eo pipefail
 
 DATA_DIR="${DATA_DIR:-/data}"
 
+export HOME="${DATA_DIR}"
+export JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-21-openjdk-${TARGETARCH:-amd64}}"
+if [[ ! -d "$JAVA_HOME" ]]; then
+  JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v java)")")")"
+  export JAVA_HOME
+fi
+
 readonly CONFIG_DIR="/config"
 WORLDS_DIR="${CONFIG_DIR}/worlds"
 
@@ -206,7 +213,7 @@ if ! isTrue "${EULA}"; then
   tail -f /dev/null
 fi
 
-JVM_OPTS=""
+JVM_OPTS="-Duser.home=${HOME}"
 if isPercentage "${INIT_MEMORY}"; then
   JVM_OPTS="-XX:InitialRAMPercentage=${INIT_MEMORY%\%} ${JVM_OPTS}"
 else
