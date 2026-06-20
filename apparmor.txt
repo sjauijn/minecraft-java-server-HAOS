@@ -71,6 +71,14 @@ profile hassio-addons-minecraft_java_server flags=(attach_disconnected,mediate_d
   /usr/lib/jvm/**                  mrixwlk,
   /usr/bin/gosu                    ixr,
 
+  # ====== Java security/cacerts self-heal tools ======
+  /usr/bin/dpkg                    ixr,
+  /usr/sbin/dpkg                   ixr,
+  /usr/sbin/update-ca-certificates ixr,
+  /var/lib/dpkg/                   r,
+  /var/lib/dpkg/**                 rwk,
+  /var/cache/debconf/**            rwk,
+
   # ====== Python / Flask (web UI) ======
   /usr/bin/python3                 ixr,
   /usr/bin/python3.*               ixr,
@@ -126,8 +134,12 @@ profile hassio-addons-minecraft_java_server flags=(attach_disconnected,mediate_d
   /etc/resolv.conf                  r,
   /etc/nsswitch.conf                r,
   /etc/mime.types                   r,
-  /etc/ssl/certs/**                 r,
-  /etc/ca-certificates/**           r,
+  /etc/ssl/                          rw,
+  /etc/ssl/certs/                    rw,
+  /etc/ssl/certs/**                  rwk,
+  /etc/ca-certificates/              rw,
+  /etc/ca-certificates/**            rwk,
+  /etc/ca-certificates.conf          rw,
 
   # ====== System libraries ======
   /lib/**                           mr,

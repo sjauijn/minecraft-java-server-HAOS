@@ -21,10 +21,24 @@ RUN apt-get clean
 RUN rm -rf /var/lib/apt/lists/*
 
 # ===== Java runtime =====
+# Known Debian/Ubuntu bug: the ca-certificates-java postinst trigger can race
+# with the openjdk-*-jre-headless postinst inside a single apt-get transaction,
+# leaving /etc/ssl/certs/java/cacerts (and therefore java.security init) broken.
+# See: https://bugs.debian.org/1030129 https://bugs.debian.org/1035416
+# Fix: install ca-certificates-java first on its own, then the JRE, then force
+# dpkg to finish configuring everything and regenerate the Java cacerts store.
 RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates-java \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends openjdk-21-jre-headless \
+    && dpkg --configure -a \
+    && /var/lib/dpkg/info/ca-certificates-java.postinst configure || true \
+    && update-ca-certificates -f \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+RUN test -s /etc/ssl/certs/java/cacerts && echo "✅ cacerts present" \
+    && test -s "$(dirname "$(dirname "$(readlink -f "$(command -v java)")")")/conf/security/java.security" && echo "✅ java.security present" \
+    && java -version
 
 RUN echo "🏗️ Building for platform: ${TARGETPLATFORM} (OS=${TARGETOS}, ARCH=${TARGETARCH})"
 
