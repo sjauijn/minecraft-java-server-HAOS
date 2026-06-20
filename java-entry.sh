@@ -4,8 +4,7 @@ set -eo pipefail
 DATA_DIR="${DATA_DIR:-/data}"
 
 export HOME="${DATA_DIR}"
-export JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-21-openjdk-${TARGETARCH:-amd64}}"
-if [[ ! -d "$JAVA_HOME" ]]; then
+if [[ -z "${JAVA_HOME:-}" ]] || [[ ! -d "${JAVA_HOME:-}" ]]; then
   JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v java)")")")"
   export JAVA_HOME
 fi

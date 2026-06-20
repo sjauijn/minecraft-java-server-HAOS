@@ -1,4 +1,15 @@
 ARG TARGETARCH
+
+# itzg/minecraft-server:java21 ships a known-good, battle-tested Eclipse Temurin
+# JRE 21 (Ubuntu-based). Installing openjdk-21-jre-headless via apt on the
+# Debian Trixie base image is unreliable: the ca-certificates-java postinst
+# trigger can race with/corrupt the JRE's java.security/cacerts setup
+# (https://bugs.debian.org/1030129, https://bugs.debian.org/1035416),
+# producing "Error loading java.security file" at runtime regardless of any
+# apt-side workaround. Copying the JRE directly from itzg's image sidesteps
+# the bug entirely since that JRE is never touched by Debian's apt/dpkg.
+FROM itzg/minecraft-server:java21 AS java-source
+
 FROM ghcr.io/home-assistant/amd64-base-debian:trixie
 
 ARG TARGETOS
@@ -15,30 +26,20 @@ ARG MC_SERVER_RUNNER_VERSION
 
 # ===== Base tools =====
 RUN apt-get update
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y curl unzip jq dos2unix gosu openssl
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y curl unzip jq dos2unix gosu openssl ca-certificates
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y python3 python3-pip python3-flask python3-waitress
 RUN apt-get clean
 RUN rm -rf /var/lib/apt/lists/*
 
-# ===== Java runtime =====
-# Known Debian/Ubuntu bug: the ca-certificates-java postinst trigger can race
-# with the openjdk-*-jre-headless postinst inside a single apt-get transaction,
-# leaving /etc/ssl/certs/java/cacerts (and therefore java.security init) broken.
-# See: https://bugs.debian.org/1030129 https://bugs.debian.org/1035416
-# Fix: install ca-certificates-java first on its own, then the JRE, then force
-# dpkg to finish configuring everything and regenerate the Java cacerts store.
-RUN apt-get update \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates-java \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends openjdk-21-jre-headless \
-    && dpkg --configure -a \
-    && /var/lib/dpkg/info/ca-certificates-java.postinst configure || true \
-    && update-ca-certificates -f \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+# ===== Java runtime (copied verbatim from itzg/minecraft-server:java21) =====
+COPY --from=java-source /usr/lib/jvm /usr/lib/jvm
+RUN JAVA_DIR="$(find /usr/lib/jvm -maxdepth 1 -type d -iname '*21*' | head -n1)" \
+    && [ -n "$JAVA_DIR" ] \
+    && ln -sf "${JAVA_DIR}/bin/java" /usr/bin/java \
+    && ln -sf "${JAVA_DIR}/bin/java" /usr/local/bin/java \
+    && echo "JAVA_HOME=${JAVA_DIR}" >> /etc/environment
 
-RUN test -s /etc/ssl/certs/java/cacerts && echo "✅ cacerts present" \
-    && test -s "$(dirname "$(dirname "$(readlink -f "$(command -v java)")")")/conf/security/java.security" && echo "✅ java.security present" \
-    && java -version
+RUN java -version
 
 RUN echo "🏗️ Building for platform: ${TARGETPLATFORM} (OS=${TARGETOS}, ARCH=${TARGETARCH})"
 

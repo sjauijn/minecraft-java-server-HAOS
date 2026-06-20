@@ -16,28 +16,19 @@ get_option() {
     fi
 }
 
-heal_java_security_if_broken() {
+check_java_ok() {
     command -v java >/dev/null 2>&1 || return 0
     if java -version >/dev/null 2>&1; then
         return 0
     fi
     echo ""
-    echo "⚠️  Java failed its basic self-check (java -version). Attempting repair of"
-    echo "    the ca-certificates-java/java.security setup (known Debian packaging bug)..."
-    dpkg --configure -a >/dev/null 2>&1 || true
-    if [ -x /var/lib/dpkg/info/ca-certificates-java.postinst ]; then
-        /var/lib/dpkg/info/ca-certificates-java.postinst configure >/dev/null 2>&1 || true
-    fi
-    update-ca-certificates -f >/dev/null 2>&1 || true
-    if java -version >/dev/null 2>&1; then
-        echo "  ✅ Repair successful — Java is now functional."
-    else
-        echo "  ❌ Repair attempt failed. Java is still broken. Please rebuild/update the add-on image."
-    fi
+    echo "❌ Java failed its basic self-check (java -version). This indicates a"
+    echo "   broken add-on image. Please rebuild/update the add-on and report this"
+    echo "   if it persists."
     echo ""
 }
 
-heal_java_security_if_broken
+check_java_ok
 
 INSTALL_UPGRADE_MODE="$(get_option 'install_upgrade_server')"
 ALLOW_DOWNGRADE="$(get_option 'allow_downgrade')"

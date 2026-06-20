@@ -1,3 +1,25 @@
+## 1.0.2 - 2026-06-20
+
+### Fixed
+
+- The `Error loading java.security file` crash persisted even after the `mc-image-helper`
+  removal in 1.0.1, because the actual root cause was the apt-installed
+  `openjdk-21-jre-headless` package itself: the `ca-certificates-java` postinst trigger
+  intermittently corrupts the JRE's `java.security`/`cacerts` setup on the Debian Trixie
+  base image, regardless of which user runs `java` or which server jar is used.
+- Replaced the apt-installed JRE entirely with a JRE copied directly from the official
+  `itzg/minecraft-server:java21` image via a Docker multi-stage `COPY --from`. That JRE
+  is never touched by `apt`/`dpkg`, so the bug cannot occur.
+- Simplified `java-entry.sh`'s `JAVA_HOME` detection to resolve from the `java` binary
+  symlink rather than a hardcoded Debian package path that no longer exists.
+- Reverted the now-unnecessary `dpkg`/`update-ca-certificates` self-heal logic added in
+  1.0.1 and the corresponding AppArmor write rules for `/etc/ssl/certs` and
+  `/var/lib/dpkg`, since the JRE is no longer apt-managed.
+- Documented in the README that older server versions (e.g. Paper/Spigot 1.16.5) still
+  require an older Java release than the Java 21 bundled here, and will fail to start
+  for an unrelated reason (`UnsupportedClassVersionError`/JNI error) even once the jar
+  installs successfully.
+
 ## 1.0.1 - 2026-06-20
 
 ### Fixed

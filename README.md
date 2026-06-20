@@ -33,11 +33,39 @@ Exception in thread "main" java.lang.InternalError: Error loading java.security 
 /usr/local/bin/mc-image-helper: 110: uname: Permission denied
 ```
 
-This happens because the add-on runs the actual server process as a demoted, non-root
-user (via `entrypoint-demoter`), and the bundled JRE inside the `mc-image-helper`
-distribution could not initialize its security provider under that user/permission
-context. Rather than fight that, this add-on uses the same manual-installation pattern
-as the Bedrock add-on: you supply the jar, the add-on just runs it.
+Rather than fight that, this add-on uses the same manual-installation pattern as the
+Bedrock add-on: you supply the jar, the add-on just runs it.
+
+## Why is the JRE copied from itzg/minecraft-server instead of installed via apt?
+
+Installing `openjdk-21-jre-headless` via `apt` on the Debian Trixie base image is
+unreliable in this environment: the `ca-certificates-java` postinst trigger can
+corrupt the JRE's `java.security`/`cacerts` setup, producing this error at runtime
+regardless of jar type or version:
+
+```
+Exception in thread "main" java.lang.InternalError: Error loading java.security file
+```
+
+To avoid this entirely, the image copies the JRE directly out of the official,
+battle-tested `itzg/minecraft-server:java21` image during build (multi-stage
+`COPY --from`), instead of installing it via `apt`. That JRE is never touched by
+Debian's package manager, so the bug cannot occur.
+
+### Java version / server version compatibility
+
+This add-on currently bundles **Java 21**, which covers current Vanilla, Paper, Fabric,
+Forge, etc. releases. Older server versions that require an older Java release will
+**not start** even though the jar installs successfully — for example:
+
+- Paper/Spigot **1.16.5** requires Java 8 or 11, not 21
+- Very old Forge versions (pre-1.18) require Java 8
+
+If your server jar fails immediately after "Starting Java server ..." with a
+`java.lang.UnsupportedClassVersionError` or a JNI/launch error, check whether your
+chosen Minecraft version is compatible with Java 21 first — see the
+[itzg/docker-minecraft-server Java version table](https://docker-minecraft-server.readthedocs.io/en/latest/java/)
+for the version you need.
 
 ## Directory layout
 
