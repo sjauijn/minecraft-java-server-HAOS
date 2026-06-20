@@ -1,0 +1,23 @@
+name: "Minecraft Java Server"
+description: "Minecraft Java Edition Server tailored for Home Assistant with worlds accessible via SFTP"
+version: "1.0.0"
+slug: "minecraft_java_server"
+url: https://github.com/sjauijn/minecraft-java-server-HAOS/
+apparmor: true
+init: false
+startup: application
+ingress: true
+ingress_port: 8790
+panel_icon: mdi:minecraft
+panel_title: "Minecraft Java Server"
+host_network: true
+arch:
+  - amd64
+  - aarch64
+map:
+  - share:rw
+  - addon_config:rw
+schema:
+  log_level: list(trace|debug|info|notice|warning|error|fatal)?
+options:
+  log_level: info

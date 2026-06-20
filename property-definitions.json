@@ -1,0 +1,210 @@
+{
+  "allow-flight": {
+    "env": "ALLOW_FLIGHT",
+    "allowed": ["true", "false"]
+  },
+  "allow-nether": {
+    "env": "ALLOW_NETHER",
+    "allowed": ["true", "false"]
+  },
+  "broadcast-console-to-ops": {
+    "env": "BROADCAST_CONSOLE_TO_OPS",
+    "allowed": ["true", "false"]
+  },
+  "broadcast-rcon-to-ops": {
+    "env": "BROADCAST_RCON_TO_OPS",
+    "allowed": ["true", "false"]
+  },
+  "difficulty": {
+    "env": "DIFFICULTY",
+    "allowed": ["peaceful", "easy", "normal", "hard"]
+  },
+  "enable-command-block": {
+    "env": "ENABLE_COMMAND_BLOCK",
+    "allowed": ["true", "false"]
+  },
+  "enable-query": {
+    "env": "ENABLE_QUERY",
+    "allowed": ["true", "false"]
+  },
+  "enable-rcon": {
+    "env": "ENABLE_RCON",
+    "allowed": ["true", "false"]
+  },
+  "enable-status": {
+    "env": "ENABLE_STATUS",
+    "allowed": ["true", "false"]
+  },
+  "enforce-secure-profile": {
+    "env": "ENFORCE_SECURE_PROFILE",
+    "allowed": ["true", "false"]
+  },
+  "enforce-whitelist": {
+    "env": "ENFORCE_WHITELIST",
+    "allowed": ["true", "false"]
+  },
+  "entity-broadcast-range-percentage": {
+    "env": "ENTITY_BROADCAST_RANGE_PERCENTAGE"
+  },
+  "force-gamemode": {
+    "env": "FORCE_GAMEMODE",
+    "allowed": ["true", "false"]
+  },
+  "function-permission-level": {
+    "env": "FUNCTION_PERMISSION_LEVEL"
+  },
+  "gamemode": {
+    "env": "MODE",
+    "allowed": ["survival", "creative", "adventure", "spectator"],
+    "mappings": {
+      "0": "survival",
+      "1": "creative",
+      "2": "adventure",
+      "3": "spectator"
+    }
+  },
+  "generate-structures": {
+    "env": "GENERATE_STRUCTURES",
+    "allowed": ["true", "false"]
+  },
+  "generator-settings": {
+    "env": "GENERATOR_SETTINGS"
+  },
+  "hardcore": {
+    "env": "HARDCORE",
+    "allowed": ["true", "false"]
+  },
+  "hide-online-players": {
+    "env": "HIDE_ONLINE_PLAYERS",
+    "allowed": ["true", "false"]
+  },
+  "level-name": {
+    "env": "LEVEL"
+  },
+  "level-seed": {
+    "env": "SEED"
+  },
+  "level-type": {
+    "env": "LEVEL_TYPE",
+    "allowed": ["minecraft:normal", "minecraft:flat", "minecraft:large_biomes", "minecraft:amplified", "minecraft:single_biome_surface"],
+    "mappings": {
+      "default": "minecraft:normal",
+      "flat": "minecraft:flat",
+      "largebiomes": "minecraft:large_biomes",
+      "amplified": "minecraft:amplified"
+    }
+  },
+  "log-ips": {
+    "env": "LOG_IPS",
+    "allowed": ["true", "false"]
+  },
+  "max-build-height": {
+    "env": "MAX_BUILD_HEIGHT"
+  },
+  "max-chained-neighbor-updates": {
+    "env": "MAX_CHAINED_NEIGHBOR_UPDATES"
+  },
+  "max-players": {
+    "env": "MAX_PLAYERS"
+  },
+  "max-tick-time": {
+    "env": "MAX_TICK_TIME"
+  },
+  "max-world-size": {
+    "env": "MAX_WORLD_SIZE"
+  },
+  "motd": {
+    "env": "MOTD"
+  },
+  "network-compression-threshold": {
+    "env": "NETWORK_COMPRESSION_THRESHOLD"
+  },
+  "online-mode": {
+    "env": "ONLINE_MODE",
+    "allowed": ["true", "false"]
+  },
+  "op-permission-level": {
+    "env": "OP_PERMISSION_LEVEL"
+  },
+  "player-idle-timeout": {
+    "env": "PLAYER_IDLE_TIMEOUT"
+  },
+  "prevent-proxy-connections": {
+    "env": "PREVENT_PROXY_CONNECTIONS",
+    "allowed": ["true", "false"]
+  },
+  "pvp": {
+    "env": "PVP",
+    "allowed": ["true", "false"]
+  },
+  "query.port": {
+    "env": "QUERY_PORT"
+  },
+  "rate-limit": {
+    "env": "RATE_LIMIT"
+  },
+  "rcon.password": {
+    "env": "RCON_PASSWORD"
+  },
+  "rcon.port": {
+    "env": "RCON_PORT"
+  },
+  "region-file-compression": {
+    "env": "REGION_FILE_COMPRESSION"
+  },
+  "require-resource-pack": {
+    "env": "RESOURCE_PACK_ENFORCE",
+    "allowed": ["true", "false"]
+  },
+  "resource-pack": {
+    "env": "RESOURCE_PACK"
+  },
+  "resource-pack-id": {
+    "env": "RESOURCE_PACK_ID"
+  },
+  "resource-pack-prompt": {
+    "env": "RESOURCE_PACK_PROMPT"
+  },
+  "resource-pack-sha1": {
+    "env": "RESOURCE_PACK_SHA1"
+  },
+  "server-ip": {
+    "env": "SERVER_IP"
+  },
+  "server-port": {
+    "env": "SERVER_PORT"
+  },
+  "simulation-distance": {
+    "env": "SIMULATION_DISTANCE"
+  },
+  "spawn-animals": {
+    "env": "SPAWN_ANIMALS",
+    "allowed": ["true", "false"]
+  },
+  "spawn-monsters": {
+    "env": "SPAWN_MONSTERS",
+    "allowed": ["true", "false"]
+  },
+  "spawn-npcs": {
+    "env": "SPAWN_NPCS",
+    "allowed": ["true", "false"]
+  },
+  "spawn-protection": {
+    "env": "SPAWN_PROTECTION"
+  },
+  "sync-chunk-writes": {
+    "env": "SYNC_CHUNK_WRITES",
+    "allowed": ["true", "false"]
+  },
+  "use-native-transport": {
+    "env": "USE_NATIVE_TRANSPORT",
+    "allowed": ["true", "false"]
+  },
+  "view-distance": {
+    "env": "VIEW_DISTANCE"
+  },
+  "white-list": {
+    "env": "WHITELIST_PROP",
+    "allowed": ["true", "false"]
+  }
+}

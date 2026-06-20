@@ -1,0 +1,61 @@
+#!/bin/bash
+set -euo pipefail
+
+# Send commands to the Java server via RCON using rcon-cli.
+# Falls back to writing to the server's STDIN if RCON is unavailable.
+
+DATA_DIR=${DATA_DIR:-/data}
+RUNTIME_DIR=${RUNTIME_DIR:-"${DATA_DIR}/run"}
+PID_FILE=${PID_FILE:-"${RUNTIME_DIR}/java_server.pid"}
+RCON_PASSWORD_FILE_PATH="${DATA_DIR}/.rcon-password"
+
+send_with_rcon() {
+  local cmd="$1"
+
+  if [[ ! -f "${RCON_PASSWORD_FILE_PATH}" ]]; then
+    return 1
+  fi
+
+  local password
+  password="$(cat "${RCON_PASSWORD_FILE_PATH}" 2>/dev/null || true)"
+  [[ -z "${password}" ]] && return 1
+
+  rcon-cli --host 127.0.0.1 --port "${RCON_PORT:-25575}" --password "${password}" "${cmd}" >/dev/null 2>&1
+}
+
+send_with_pidfile() {
+  local cmd="$1"
+
+  if [[ -f "${PID_FILE}" ]]; then
+    local pid
+    pid="$(cat "${PID_FILE}" 2>/dev/null || true)"
+
+    if [[ -n "${pid}" && -d "/proc/${pid}" ]]; then
+      printf '%s\n' "${cmd}" >"/proc/${pid}/fd/0"
+      return 0
+    fi
+  fi
+
+  return 1
+}
+
+main() {
+  if [[ $# -eq 0 ]]; then
+    exit 0
+  fi
+
+  local cmd="$*"
+
+  if send_with_rcon "${cmd}"; then
+    exit 0
+  fi
+
+  if send_with_pidfile "${cmd}"; then
+    exit 0
+  fi
+
+  echo "ERROR: unable to send command to java server" >&2
+  exit 2
+}
+
+main "$@"
