@@ -186,34 +186,83 @@ export SKIP_DOWNLOAD_DEFAULTS=true
 export OVERRIDE_SERVER_PROPERTIES=false
 export SKIP_SERVER_PROPERTIES=true
 
+resolve_vanilla() {
+  local want="$1"
+  local manifest version_id server_url
+  manifest="$(curl -fsSL https://launchermeta.mojang.com/mc/game/version_manifest_v2.json)" || return 1
+
+  if [[ "${want^^}" == "LATEST" || -z "$want" ]]; then
+    version_id="$(echo "$manifest" | jq -r '.latest.release')"
+  elif [[ "${want^^}" == "SNAPSHOT" ]]; then
+    version_id="$(echo "$manifest" | jq -r '.latest.snapshot')"
+  else
+    version_id="$want"
+  fi
+
+  local version_url
+  version_url="$(echo "$manifest" | jq -r --arg v "$version_id" '.versions[] | select(.id == $v) | .url')"
+  if [[ -z "$version_url" || "$version_url" == "null" ]]; then
+    echo "❌ Could not find Minecraft version '${version_id}' in Mojang's manifest."
+    return 1
+  fi
+
+  server_url="$(curl -fsSL "$version_url" | jq -r '.downloads.server.url')"
+  if [[ -z "$server_url" || "$server_url" == "null" ]]; then
+    echo "❌ No server download available for Minecraft version '${version_id}'."
+    return 1
+  fi
+
+  curl -fsSL -o "vanilla-server-${version_id}.jar" "$server_url"
+}
+
+RESULTS_FILE="$(pwd)/.install-results"
+rm -f "$RESULTS_FILE"
+
 run_via_mc_helper() {
   case "${TYPE^^}" in
     VANILLA)
-      mc-image-helper install-server --type VANILLA --version "${VERSION}" --output-directory .
+      resolve_vanilla "${VERSION}"
       ;;
     PAPER)
-      mc-image-helper install-server --type PAPER --version "${VERSION}" --output-directory .
+      mc-image-helper install-paper --version "${VERSION}" --output-directory . --results-file "${RESULTS_FILE}"
       ;;
     FABRIC)
-      mc-image-helper install-server --type FABRIC --version "${VERSION}" --output-directory .
+      mc-image-helper install-fabric-loader --minecraft-version "${VERSION}" --output-directory . --results-file "${RESULTS_FILE}"
+      ;;
+    FORGE)
+      mc-image-helper install-forge --minecraft-version "${VERSION}" --output-directory . --results-file "${RESULTS_FILE}"
+      ;;
+    NEOFORGE)
+      mc-image-helper install-neoforge --minecraft-version "${VERSION}" --output-directory . --results-file "${RESULTS_FILE}"
+      ;;
+    QUILT)
+      mc-image-helper install-quilt --minecraft-version "${VERSION}" --output-directory . --results-file "${RESULTS_FILE}"
+      ;;
+    PURPUR)
+      mc-image-helper install-purpur --version "${VERSION}" --output-directory . --results-file "${RESULTS_FILE}"
       ;;
     *)
-      mc-image-helper install-server --type "${TYPE^^}" --version "${VERSION}" --output-directory .
+      echo "❌ Unsupported TYPE=${TYPE}. Supported: VANILLA, PAPER, FABRIC, FORGE, NEOFORGE, QUILT, PURPUR."
+      return 1
       ;;
   esac
 }
 
 if ! run_via_mc_helper; then
   helper_exit=$?
-  echo "❌ Failed to install/resolve Minecraft server software for TYPE=${TYPE} VERSION=${VERSION} (mc-image-helper exit code ${helper_exit})"
+  echo "❌ Failed to install/resolve Minecraft server software for TYPE=${TYPE} VERSION=${VERSION} (exit code ${helper_exit})"
   echo "   Check the Type/Version configuration in the add-on UI."
-  echo "   If mc-image-helper printed only its own name/version above with no further output,"
-  echo "   it failed to even start (e.g. permission/AppArmor issue) rather than failing the install itself."
   tail -f /dev/null
 fi
 
-SERVER_JAR="$(find . -maxdepth 1 -iname '*.jar' ! -iname '*installer*' | head -n1)"
+SERVER_JAR=""
+if [[ -f "$RESULTS_FILE" ]]; then
+  SERVER_JAR="$(grep -E '^SERVER=' "$RESULTS_FILE" | head -n1 | cut -d= -f2-)"
+fi
 if [[ -z "$SERVER_JAR" ]]; then
+  SERVER_JAR="$(find . -maxdepth 1 -iname '*.jar' ! -iname '*installer*' | head -n1)"
+fi
+if [[ -z "$SERVER_JAR" || ! -e "$SERVER_JAR" ]]; then
   echo "❌ No server jar found after installation step."
   tail -f /dev/null
 fi
@@ -237,5 +286,12 @@ fi
 
 echo "🚀 Starting Java server ${TYPE} ${VERSION}"
 echo "   JVM opts: ${JVM_OPTS}"
+echo "   Entry point: ${SERVER_JAR}"
 
-exec mc-server-runner --stop-duration 60s java ${JVM_OPTS} -jar "${SERVER_JAR}" nogui
+if [[ "${SERVER_JAR}" == *.sh ]]; then
+  chmod +x "${SERVER_JAR}" 2>/dev/null || true
+  export JAVA_OPTS="${JVM_OPTS}"
+  exec mc-server-runner --stop-duration 60s "${SERVER_JAR}" nogui
+else
+  exec mc-server-runner --stop-duration 60s java ${JVM_OPTS} -jar "${SERVER_JAR}" nogui
+fi
