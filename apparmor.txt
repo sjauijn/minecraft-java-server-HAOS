@@ -35,6 +35,7 @@ profile hassio-addons-minecraft_java_server flags=(attach_disconnected,mediate_d
   /usr/bin/cp                      ixr,
   /usr/bin/cut                     ixr,
   /usr/bin/dirname                 ixr,
+  /usr/bin/echo                    ixr,
   /usr/bin/find                    ixr,
   /usr/bin/grep                    ixr,
   /usr/bin/head                    ixr,
@@ -56,6 +57,7 @@ profile hassio-addons-minecraft_java_server flags=(attach_disconnected,mediate_d
   /usr/bin/timeout                 ixr,
   /usr/bin/touch                   ixr,
   /usr/bin/tr                      ixr,
+  /usr/bin/uname                   ixr,
   /usr/bin/unzip                   ixr,
   /usr/bin/wc                      ixr,
   /usr/bin/xargs                   ixr,
@@ -129,6 +131,10 @@ profile hassio-addons-minecraft_java_server flags=(attach_disconnected,mediate_d
   /etc/mime.types                   r,
   /etc/ssl/certs/**                 r,
   /etc/ca-certificates/**           r,
+
+  # ====== JVM config (java.security, java.policy, etc. live OUTSIDE /usr/lib/jvm on Debian) ======
+  /etc/java-*-openjdk/              r,
+  /etc/java-*-openjdk/**            r,
 
   # ====== System libraries ======
   /lib/**                           mr,

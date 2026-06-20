@@ -186,15 +186,6 @@ export SKIP_DOWNLOAD_DEFAULTS=true
 export OVERRIDE_SERVER_PROPERTIES=false
 export SKIP_SERVER_PROPERTIES=true
 
-# mc-image-helper resolveert/downloadt het juiste server jar voor TYPE/VERSION.
-case "${TYPE^^}" in
-  VANILLA|PAPER|SPIGOT|BUKKIT|FABRIC|FORGE|NEOFORGE|QUILT|PURPUR|FOLIA)
-    if ! mc-image-helper install-from-mojang --output-directory . 2>/dev/null; then
-      :
-    fi
-    ;;
-esac
-
 run_via_mc_helper() {
   case "${TYPE^^}" in
     VANILLA)

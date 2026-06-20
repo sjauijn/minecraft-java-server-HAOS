@@ -1,3 +1,11 @@
+## 1.0.1 - 2026-06-20
+
+### Fixed
+
+- AppArmor profile was blocking `uname` and `echo`, breaking `mc-image-helper` at startup (`Permission denied`)
+- AppArmor profile did not allow reading `/etc/java-*-openjdk/**`, where Debian's OpenJDK actually keeps `java.security`/`java.policy` (it's a symlink target outside `/usr/lib/jvm`). This caused every JVM invocation (both `mc-image-helper` and the Minecraft server itself) to crash with `InternalError: Error loading java.security file`
+- Removed a dead/no-op `mc-image-helper install-from-mojang` pre-step in `java-entry.sh` that never affected behavior and only added confusing log output
+
 ## 1.0.0 - 2026-06-20
 
 ### Initial release
