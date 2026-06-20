@@ -86,13 +86,12 @@ profile hassio-addons-minecraft_java_server flags=(attach_disconnected,mediate_d
   /usr/local/bin/restify           ixr,
   /usr/local/bin/rcon-cli          ixr,
   /usr/local/bin/mc-server-runner  ixr,
-  /usr/local/bin/mc-image-helper   ixr,
   /usr/local/bin/entrypoint-demoter ixr,
-  /usr/share/mc-image-helper*/**   mrixwlk,
 
   # ====== Add-on scripts ======
   /opt/start.sh                    ixr,
   /opt/java-entry.sh                ixr,
+  /opt/install-server.sh            ixr,
   /opt/healthcheck.sh               ixr,
 
   # ====== Add-on directory (scripts, libs, resources) ======

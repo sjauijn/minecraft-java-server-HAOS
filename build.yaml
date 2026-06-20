@@ -9,7 +9,6 @@ args:
   MC_MONITOR_VERSION: "0.16.7"
   RCON_CLI_VERSION: "1.7.6"
   MC_SERVER_RUNNER_VERSION: "1.15.0"
-  MC_HELPER_VERSION: "1.61.0"
 labels:
   org.opencontainers.image.title: "Minecraft Java Server (HA Add-on)"
-  org.opencontainers.image.description: "Java Edition server with automatic software installation via mc-image-helper"
+  org.opencontainers.image.description: "Java Edition server with manual server.jar installation"

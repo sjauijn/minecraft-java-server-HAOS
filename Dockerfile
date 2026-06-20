@@ -12,7 +12,6 @@ ARG RESTIFY_VERSION
 ARG MC_MONITOR_VERSION
 ARG RCON_CLI_VERSION
 ARG MC_SERVER_RUNNER_VERSION
-ARG MC_HELPER_VERSION
 
 # ===== Base tools =====
 RUN apt-get update
@@ -29,7 +28,7 @@ RUN apt-get update \
 
 RUN echo "🏗️ Building for platform: ${TARGETPLATFORM} (OS=${TARGETOS}, ARCH=${TARGETARCH})"
 
-# Java server poort + Ingress poort (Flask Webservice)
+# Java server poort + RCON poort + Ingress poort (Flask Webservice)
 EXPOSE 25565/tcp 25575/tcp 8790/tcp
 
 VOLUME ["/data"]
@@ -41,7 +40,7 @@ ENTRYPOINT ["/usr/local/bin/entrypoint-demoter", "--match", "/data", "--debug", 
 ADD https://github.com/itzg/easy-add/releases/download/${EASY_ADD_VERSION}/easy-add_linux_${TARGETARCH} /usr/local/bin/easy-add
 RUN chmod +x /usr/local/bin/easy-add
 
-# Extra tools installeren via easy-add (zelfde set als itzg/docker-minecraft-server)
+# Extra tools installeren via easy-add
 RUN easy-add --var version=${ENTRYPOINT_DEMOTER_VERSION} --var app=entrypoint-demoter --file {{.app}} --from https://github.com/itzg/{{.app}}/releases/download/v{{.version}}/{{.app}}_{{.version}}_linux_${TARGETARCH}.tar.gz
 RUN easy-add --var version=${SET_PROPERTY_VERSION} --var app=set-property --file {{.app}} --from https://github.com/itzg/{{.app}}/releases/download/{{.version}}/{{.app}}_{{.version}}_linux_${TARGETARCH}.tar.gz
 RUN easy-add --var version=${RESTIFY_VERSION} --var app=restify --file {{.app}} --from https://github.com/itzg/{{.app}}/releases/download/{{.version}}/{{.app}}_{{.version}}_linux_${TARGETARCH}.tar.gz
@@ -49,28 +48,26 @@ RUN easy-add --var version=${MC_MONITOR_VERSION} --var app=mc-monitor --file {{.
 RUN easy-add --var version=${RCON_CLI_VERSION} --var app=rcon-cli --file {{.app}} --from https://github.com/itzg/{{.app}}/releases/download/{{.version}}/{{.app}}_{{.version}}_linux_${TARGETARCH}.tar.gz
 RUN easy-add --var version=${MC_SERVER_RUNNER_VERSION} --var app=mc-server-runner --file {{.app}} --from https://github.com/itzg/{{.app}}/releases/download/{{.version}}/{{.app}}_{{.version}}_linux_${TARGETARCH}.tar.gz
 
-# mc-image-helper (geen per-arch losse binary; bevat zelf een launcher script)
-RUN curl -fsSL https://github.com/itzg/mc-image-helper/releases/download/${MC_HELPER_VERSION}/mc-image-helper-${MC_HELPER_VERSION}.tgz \
-  | tar -C /usr/share -zxf - \
-    && ln -s /usr/share/mc-image-helper-${MC_HELPER_VERSION}/ /usr/share/mc-image-helper \
-    && ln -s /usr/share/mc-image-helper/bin/mc-image-helper /usr/local/bin/mc-image-helper
-
 # Log4j RCE patch agent (zelfde als itzg/docker-minecraft-server)
 RUN curl -fsSL -o /opt/Log4jPatcher.jar https://github.com/CreeperHost/Log4jPatcher/releases/download/v1.0.1/Log4jPatcher-1.0.1.jar
 
 # Bestanden naar container kopiëren
 COPY java-entry.sh /opt/java-entry.sh
 COPY start.sh /opt/start.sh
+COPY install-server.sh /opt/install-server.sh
 COPY healthcheck.sh /opt/healthcheck.sh
 COPY property-definitions.json /etc/mc-property-definitions.json
 COPY web/app.py /opt/flask/app.py
 COPY web/static /opt/flask/static
 COPY bin/* /usr/local/bin/
 
-RUN dos2unix /opt/java-entry.sh /opt/start.sh /opt/healthcheck.sh
+RUN dos2unix /opt/java-entry.sh /opt/start.sh /opt/install-server.sh /opt/healthcheck.sh
+
+RUN mkdir -p /opt/server
 
 RUN chmod +x /opt/java-entry.sh
 RUN chmod +x /opt/start.sh
+RUN chmod +x /opt/install-server.sh
 RUN chmod +x /opt/healthcheck.sh
 RUN chmod +x /usr/local/bin/send-command
 
