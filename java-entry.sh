@@ -3,12 +3,6 @@ set -eo pipefail
 
 DATA_DIR="${DATA_DIR:-/data}"
 
-export HOME="${DATA_DIR}"
-if [[ -z "${JAVA_HOME:-}" ]] || [[ ! -d "${JAVA_HOME:-}" ]]; then
-  JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v java)")")")"
-  export JAVA_HOME
-fi
-
 readonly CONFIG_DIR="/config"
 WORLDS_DIR="${CONFIG_DIR}/worlds"
 
@@ -41,7 +35,6 @@ fi
 
 isTrue() { case "${1,,}" in true|on|1|yes) return 0 ;; *) return 1 ;; esac; }
 lower_bool() { case "${1,,}" in true|1|on|yes) echo "true" ;; *) echo "false" ;; esac; }
-isPercentage() { [[ "$1" =~ %$ ]]; }
 
 OPT_FILE="${DATA_DIR}/config/java_for_ha_config.json"
 optn() { jq -r "$1 // empty" "$OPT_FILE" 2>/dev/null; }
@@ -54,35 +47,9 @@ fi
 
 cd "${DATA_DIR}/server"
 
-readonly BIN_DIR="${DATA_DIR}/server"
-readonly VERSION_FILE="${DATA_DIR}/.installed-java-version"
-readonly TYPE_FILE="${DATA_DIR}/.installed-java-type"
-
-INSTALLED_VERSION="$(cat "${VERSION_FILE}" 2>/dev/null || true)"
-INSTALLED_TYPE="$(cat "${TYPE_FILE}" 2>/dev/null || true)"
-
-SERVER_JAR="${BIN_DIR}/server.jar"
-
-if [[ -z "$INSTALLED_VERSION" ]] || [[ ! -f "$SERVER_JAR" ]]; then
-  echo ""
-  echo "╔══════════════════════════════════════════════════════════════════════╗"
-  echo "║  ❌  Minecraft Java Server software is not installed.               ║"
-  echo "║                                                                     ║"
-  echo "║  Please set  Installing/Upgrading Server = true  in the add-on      ║"
-  echo "║  Configuration and restart the add-on to install the software.      ║"
-  echo "║                                                                     ║"
-  echo "║  Download the server jar (Vanilla/Paper/Fabric/Forge/...) from its  ║"
-  echo "║  official source, rename it to  <type>-server-<version>.jar  and    ║"
-  echo "║  upload it to:                                                      ║"
-  echo "║     📂  addon_configs/<this-addon>/java-server-software/           ║"
-  echo "╚══════════════════════════════════════════════════════════════════════╝"
-  echo ""
-  exit 2
-fi
-
-echo "📦 Using server jar: ${SERVER_JAR} (${INSTALLED_TYPE:-unknown} ${INSTALLED_VERSION})"
-
 export EULA="$(lower_bool "${EULA:-$(optn '.general.eula')}")"
+export TYPE="${TYPE:-$(first_nonempty "$(optn '.software.type')" VANILLA)}"
+export VERSION="${VERSION:-$(first_nonempty "$(optn '.software.version')" LATEST)}"
 
 export SERVER_NAME="${SERVER_NAME:-$(optn '.general.server_name')}"
 export MOTD="${MOTD:-$(first_nonempty "$(optn '.general.motd')" "$SERVER_NAME")}"
@@ -148,7 +115,7 @@ if [[ -z "${RCON_PASSWORD:-}" ]]; then
 fi
 export RCON_PASSWORD
 
-# ---- ops.json / whitelist.json regenereren vanuit config.players.role_assignments ----
+# ---- ops.json (operators) regenereren vanuit config.players.role_assignments ----
 
 OPS_FILE="${DATA_DIR}/server/ops.json"
 WHITELIST_FILE="${DATA_DIR}/server/whitelist.json"
@@ -212,13 +179,59 @@ if ! isTrue "${EULA}"; then
   tail -f /dev/null
 fi
 
-JVM_OPTS="-Duser.home=${HOME}"
-if isPercentage "${INIT_MEMORY}"; then
+echo "🚀 Resolving and installing Minecraft Java Server (TYPE=${TYPE}, VERSION=${VERSION})..."
+
+export REPLACE_ENV_IN_PLACE=false
+export SKIP_DOWNLOAD_DEFAULTS=true
+export OVERRIDE_SERVER_PROPERTIES=false
+export SKIP_SERVER_PROPERTIES=true
+
+# mc-image-helper resolveert/downloadt het juiste server jar voor TYPE/VERSION.
+case "${TYPE^^}" in
+  VANILLA|PAPER|SPIGOT|BUKKIT|FABRIC|FORGE|NEOFORGE|QUILT|PURPUR|FOLIA)
+    if ! mc-image-helper install-from-mojang --output-directory . 2>/dev/null; then
+      :
+    fi
+    ;;
+esac
+
+run_via_mc_helper() {
+  case "${TYPE^^}" in
+    VANILLA)
+      mc-image-helper install-server --type VANILLA --version "${VERSION}" --output-directory .
+      ;;
+    PAPER)
+      mc-image-helper install-server --type PAPER --version "${VERSION}" --output-directory .
+      ;;
+    FABRIC)
+      mc-image-helper install-server --type FABRIC --version "${VERSION}" --output-directory .
+      ;;
+    *)
+      mc-image-helper install-server --type "${TYPE^^}" --version "${VERSION}" --output-directory .
+      ;;
+  esac
+}
+
+if ! run_via_mc_helper; then
+  echo "❌ Failed to install/resolve Minecraft server software for TYPE=${TYPE} VERSION=${VERSION}"
+  echo "   Check the Type/Version configuration in the add-on UI."
+  tail -f /dev/null
+fi
+
+SERVER_JAR="$(find . -maxdepth 1 -iname '*.jar' ! -iname '*installer*' | head -n1)"
+if [[ -z "$SERVER_JAR" ]]; then
+  echo "❌ No server jar found after installation step."
+  tail -f /dev/null
+fi
+echo "📦 Using server jar: ${SERVER_JAR}"
+
+JVM_OPTS=""
+if [[ "${INIT_MEMORY}" =~ %$ ]]; then
   JVM_OPTS="-XX:InitialRAMPercentage=${INIT_MEMORY%\%} ${JVM_OPTS}"
 else
   JVM_OPTS="-Xms${INIT_MEMORY} ${JVM_OPTS}"
 fi
-if isPercentage "${MAX_MEMORY}"; then
+if [[ "${MAX_MEMORY}" =~ %$ ]]; then
   JVM_OPTS="-XX:MaxRAMPercentage=${MAX_MEMORY%\%} ${JVM_OPTS}"
 else
   JVM_OPTS="-Xmx${MAX_MEMORY} ${JVM_OPTS}"
@@ -228,7 +241,7 @@ if [[ -f /opt/Log4jPatcher.jar ]]; then
   JVM_OPTS="-javaagent:/opt/Log4jPatcher.jar ${JVM_OPTS}"
 fi
 
-echo "🚀 Starting Java server ${INSTALLED_TYPE:-unknown} ${INSTALLED_VERSION}"
+echo "🚀 Starting Java server ${TYPE} ${VERSION}"
 echo "   JVM opts: ${JVM_OPTS}"
 
 exec mc-server-runner --stop-duration 60s java ${JVM_OPTS} -jar "${SERVER_JAR}" nogui

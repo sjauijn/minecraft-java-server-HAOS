@@ -3,27 +3,7 @@ set -e
 
 DATA_DIR="${DATA_DIR:-/data}"
 CONFIG_FILE="${DATA_DIR}/config/java_for_ha_config.json"
-OPTIONS_FILE="${DATA_DIR}/options.json"
 STOP_MARKER="${DATA_DIR}/run/java_server.stopped"
-VERSION_FILE="${DATA_DIR}/.installed-java-version"
-
-get_option() {
-    local key="$1"
-    if [ -f "${OPTIONS_FILE}" ]; then
-        jq -r ".${key} // empty" "${OPTIONS_FILE}" 2>/dev/null || true
-    fi
-}
-
-INSTALL_UPGRADE_MODE="$(get_option 'install_upgrade_server')"
-case "${INSTALL_UPGRADE_MODE,,}" in
-    true|1|yes|on)
-        exit 0
-        ;;
-esac
-
-if [ ! -f "${VERSION_FILE}" ]; then
-    exit 0
-fi
 
 eula="false"
 if [ -f "$CONFIG_FILE" ]; then

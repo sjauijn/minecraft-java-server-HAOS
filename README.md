@@ -3,18 +3,12 @@
 Minecraft Java Edition Server tailored for Home Assistant OS, with full configuration
 through the Ingress web UI and worlds accessible via SFTP.
 
-Based on [itzg/docker-minecraft-server](https://github.com/itzg/docker-minecraft-server),
-but with **manual server-jar installation** (same approach as the companion
-[minecraft-bedrock-server-HAOS](https://github.com/sjauijn/minecraft-bedrock-server-HAOS)
-add-on) instead of automatic resolution via `mc-image-helper`.
+Based on [itzg/docker-minecraft-server](https://github.com/itzg/docker-minecraft-server).
 
 ## Features
 
-- Manual installation of the server software (Vanilla, Paper, Spigot, Fabric, Forge,
-  NeoForge, Quilt, Purpur, Folia, or any custom jar) — you download the jar, the add-on
-  installs and tracks it
-- Built-in **Installing/Upgrading Server** mode with version/type tracking and a
-  cancellable downgrade safety countdown
+- Automatic installation of the server software (Vanilla, Paper, Spigot, Fabric, Forge,
+  NeoForge, Quilt, Purpur, Folia) via `mc-image-helper` — no manual jar upload needed
 - Full configuration UI via Home Assistant Ingress
 - World creation/selection with per-world seed storage
 - Worlds accessible via SFTP at `addon_configs/minecraft_java_server/worlds/`
@@ -23,98 +17,28 @@ add-on) instead of automatic resolution via `mc-image-helper`.
 - AppArmor profile included
 - Health checks via `mc-monitor`
 
-## Why manual installation?
-
-`mc-image-helper` is normally used to auto-resolve and download the server jar for a
-given type/version. Inside this add-on's container, it failed at runtime with errors like:
-
-```
-Exception in thread "main" java.lang.InternalError: Error loading java.security file
-/usr/local/bin/mc-image-helper: 110: uname: Permission denied
-```
-
-Rather than fight that, this add-on uses the same manual-installation pattern as the
-Bedrock add-on: you supply the jar, the add-on just runs it.
-
-## Why is the JRE copied from itzg/minecraft-server instead of installed via apt?
-
-Installing `openjdk-21-jre-headless` via `apt` on the Debian Trixie base image is
-unreliable in this environment: the `ca-certificates-java` postinst trigger can
-corrupt the JRE's `java.security`/`cacerts` setup, producing this error at runtime
-regardless of jar type or version:
-
-```
-Exception in thread "main" java.lang.InternalError: Error loading java.security file
-```
-
-To avoid this entirely, the image copies the JRE directly out of the official,
-battle-tested `itzg/minecraft-server:java21` image during build (multi-stage
-`COPY --from`), instead of installing it via `apt`. That JRE is never touched by
-Debian's package manager, so the bug cannot occur.
-
-### Java version / server version compatibility
-
-This add-on currently bundles **Java 21**, which covers current Vanilla, Paper, Fabric,
-Forge, etc. releases. Older server versions that require an older Java release will
-**not start** even though the jar installs successfully — for example:
-
-- Paper/Spigot **1.16.5** requires Java 8 or 11, not 21
-- Very old Forge versions (pre-1.18) require Java 8
-
-If your server jar fails immediately after "Starting Java server ..." with a
-`java.lang.UnsupportedClassVersionError` or a JNI/launch error, check whether your
-chosen Minecraft version is compatible with Java 21 first — see the
-[itzg/docker-minecraft-server Java version table](https://docker-minecraft-server.readthedocs.io/en/latest/java/)
-for the version you need.
-
 ## Directory layout
 
 ```
 addon_configs/minecraft_java_server/
-├── worlds/                       # World folders (SFTP accessible)
-└── java-server-software/         # Upload <type>-server-<version>.jar here
+├── worlds/                  # World folders (SFTP accessible)
 /data/ (persistent volume)
-├── server/                       # server.jar symlink, server.properties, ops.json, whitelist.json
-├── server-<version>.jar          # Installed server jar(s)
-├── .installed-java-version       # Tracks currently installed version
-├── .installed-java-type          # Tracks currently installed type (vanilla/paper/fabric/...)
+├── server/                  # Server jar, server.properties, ops.json, whitelist.json
 ├── config/java_for_ha_config.json
-├── worldconfiguration.json       # Per-world seeds
+├── worldconfiguration.json  # Per-world seeds
 ├── .rcon-password
-└── run/                          # PID and stop-marker files
+└── run/                     # PID and stop-marker files
 ```
 
 ## Getting started
 
 1. Install the add-on.
-2. In the add-on **Configuration** tab, make sure **Installing/Upgrading Server** is
-   enabled (it is `true` by default) and start the add-on. It will tell you no jar was
-   found yet.
-3. Download the server jar you want, e.g.:
-   - Vanilla: https://www.minecraft.net/download/server
-   - Paper: https://papermc.io/downloads/paper
-   - Fabric: https://fabricmc.net/use/server/
-4. Rename it to `<type>-server-<version>.jar`, for example:
-   - `vanilla-server-1.21.4.jar`
-   - `paper-server-1.21.4.jar`
-   - `fabric-server-1.21.4.jar`
-5. Upload it to `addon_configs/minecraft_java_server/java-server-software/` (via Samba/SFTP).
-6. Restart the add-on. It will detect the jar, install it, and report success.
-7. Set **Installing/Upgrading Server** to `false`.
-8. Open the add-on Web UI (Ingress), accept the **Minecraft EULA**, save the configuration.
-9. Restart the add-on — the Java server will now start.
+2. Open the add-on Web UI (Ingress).
+3. Choose the server **Type** and **Version** (or leave `LATEST`).
+4. Accept the **Minecraft EULA**.
+5. Save the configuration and start the add-on.
 
-### Upgrading
-
-Repeat steps 3–6 with a jar of a higher version. The add-on detects the version difference
-and performs an upgrade automatically while **Installing/Upgrading Server** is `true`.
-
-### Downgrading
-
-Downgrading is blocked by default to avoid world corruption. To allow it, enable
-**Allow Downgrade** *together with* **Installing/Upgrading Server**. A 30-second countdown
-gives you a chance to cancel by stopping the add-on before the currently installed jar is
-removed. Worlds and configuration are preserved; only the jar itself is replaced.
+The first start downloads and installs the selected server software automatically.
 
 ## Sending commands
 
@@ -129,5 +53,5 @@ If RCON is disabled, `send-command` falls back to writing to the server's STDIN.
 ## License
 
 MIT License, see [LICENSE](LICENSE). Underlying server runtime tooling courtesy of
-[itzg](https://github.com/itzg) (easy-add, mc-server-runner, mc-monitor, rcon-cli,
-set-property, restify, entrypoint-demoter).
+[itzg](https://github.com/itzg) (easy-add, mc-image-helper, mc-server-runner, mc-monitor,
+rcon-cli, set-property, restify, entrypoint-demoter).

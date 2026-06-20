@@ -16,7 +16,6 @@ def _configure_paths(data_dir: str) -> None:
 
     global DATA_DIR, CONFIG_DIR, CONFIG_FILE, WORLDS_DIR, WORLD_CONFIG_FILE
     global RUNTIME_DIR, JAVA_PID_FILE, JAVA_STOP_MARKER, RCON_PASSWORD_FILE
-    global INSTALLED_VERSION_FILE, INSTALLED_TYPE_FILE
 
     DATA_DIR = data_dir
     CONFIG_DIR = os.path.join(DATA_DIR, "config")
@@ -27,8 +26,6 @@ def _configure_paths(data_dir: str) -> None:
     JAVA_PID_FILE = os.path.join(RUNTIME_DIR, "java_server.pid")
     JAVA_STOP_MARKER = os.path.join(RUNTIME_DIR, "java_server.stopped")
     RCON_PASSWORD_FILE = os.path.join(DATA_DIR, ".rcon-password")
-    INSTALLED_VERSION_FILE = os.path.join(DATA_DIR, ".installed-java-version")
-    INSTALLED_TYPE_FILE = os.path.join(DATA_DIR, ".installed-java-type")
 
 
 def configure_data_dir(data_dir: str) -> None:
@@ -67,6 +64,10 @@ DEFAULT_CONFIG = {
         "enable_query": False,
         "query_port": 25565,
         "eula": False,
+    },
+    "software": {
+        "type": "VANILLA",
+        "version": "LATEST",
     },
     "world": {
         "level_name": "world",
@@ -152,30 +153,6 @@ def list_worlds():
         if os.path.isdir(full) and not name.startswith("."):
             worlds.append(name)
     return sorted(worlds)
-
-
-def get_installed_software():
-    """Read the currently installed server jar's type/version from disk.
-
-    These files are written by install-server.sh after a successful manual
-    installation. Returns a dict with 'version' and 'type', both None if no
-    software has been installed yet.
-    """
-    version = None
-    sw_type = None
-    try:
-        if os.path.exists(INSTALLED_VERSION_FILE):
-            with open(INSTALLED_VERSION_FILE, "r", encoding="utf-8") as f:
-                version = f.read().strip() or None
-    except OSError:
-        pass
-    try:
-        if os.path.exists(INSTALLED_TYPE_FILE):
-            with open(INSTALLED_TYPE_FILE, "r", encoding="utf-8") as f:
-                sw_type = f.read().strip() or None
-    except OSError:
-        pass
-    return {"version": version, "type": sw_type, "installed": version is not None}
 
 
 def to_bool(value):
@@ -528,6 +505,14 @@ def index():
             )
             config["general"]["eula"] = to_bool(form.get("eula"))
 
+            # SOFTWARE
+            config["software"]["type"] = form.get(
+                "software_type", DEFAULT_CONFIG["software"]["type"]
+            ).strip().upper()
+            config["software"]["version"] = form.get(
+                "software_version", DEFAULT_CONFIG["software"]["version"]
+            ).strip()
+
             # WORLD
             selected_world = form.get("selected_world", "").strip()
             new_world_name = form.get("new_world_name", "").strip()
@@ -675,7 +660,6 @@ def index():
         world_configs=world_configs,
         role_assignments_json=role_assignments_json,
         role_assignments=role_assignments_list,
-        installed_software=get_installed_software(),
         message=message,
         error=error,
     )
@@ -715,22 +699,6 @@ TEMPLATE = r"""
     {% if error %}
         <div class="alert alert-danger alert-sm" role="alert">
           {{ error }}
-        </div>
-    {% endif %}
-    {% if not installed_software.installed %}
-        <div class="alert alert-danger alert-sm" role="alert">
-          <strong>No server software installed.</strong>
-          Set <strong>Installing/Upgrading Server</strong> to <code>true</code> in the add-on
-          Configuration tab, restart the add-on, then upload your
-          <code>&lt;type&gt;-server-&lt;version&gt;.jar</code> (e.g. <code>vanilla-server-1.21.4.jar</code>)
-          to <code>addon_configs/&lt;this-addon&gt;/java-server-software/</code> before restarting again.
-        </div>
-    {% else %}
-        <div class="alert alert-info alert-sm" role="alert">
-          <strong>Installed software:</strong>
-          {{ installed_software.type or "unknown" }} {{ installed_software.version }}.
-          To change the type or version, enable <strong>Installing/Upgrading Server</strong> in the
-          add-on Configuration, upload a new jar, and restart.
         </div>
     {% endif %}
     {% if not config.general.eula %}
@@ -804,18 +772,18 @@ TEMPLATE = r"""
         </div>
         <div class="card-body">
           <div class="mb-3">
-            <label class="form-label">Installed type</label>
-            <input type="text" class="form-control form-control-sm bg-black text-light" value="{{ installed_software.type or '(none)' }}" readonly>
+            <label for="software_type" class="form-label">Type</label>
+            <select class="form-select form-select-sm bg-black text-light" id="software_type" name="software_type">
+              {% for val,label in [("VANILLA","Vanilla"),("PAPER","Paper"),("SPIGOT","Spigot"),("FABRIC","Fabric"),("FORGE","Forge"),("NEOFORGE","NeoForge"),("QUILT","Quilt"),("PURPUR","Purpur"),("FOLIA","Folia")] %}
+                <option value="{{ val }}" {% if config.software.type == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
           </div>
           <div class="mb-3">
-            <label class="form-label">Installed version</label>
-            <input type="text" class="form-control form-control-sm bg-black text-light" value="{{ installed_software.version or '(none)' }}" readonly>
-            <div class="form-text text-muted">
-              Server software is installed manually via jar files placed in
-              <code>addon_configs/&lt;this-addon&gt;/java-server-software/</code>
-              while <strong>Installing/Upgrading Server</strong> is enabled. This panel only
-              reflects what is currently installed; it does not change it.
-            </div>
+            <label for="software_version" class="form-label">Version</label>
+            <input type="text" class="form-control form-control-sm bg-black text-light" id="software_version" name="software_version"
+                   value="{{ config.software.version }}" placeholder="e.g. 1.21.4 or LATEST">
+            <div class="form-text text-muted">Use "LATEST" for the newest stable release.</div>
           </div>
         </div>
       </div>
