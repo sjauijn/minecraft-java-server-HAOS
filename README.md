@@ -1,7 +1,9 @@
 # Minecraft Java Server (Home Assistant Add-on) FOR NOW DONT WORK
-I maintain this app, along with my other Home Assistant apps, solely for my own use. As long as I'm actively using them myself, I'll continue developing and updating them; otherwise, support for apps I no longer need will be discontinued.
+
+I maintain this app, along my other apps and custom integrations for the Home Assistant, solely for my own use. As long as I'm actively using them myself, I'll continue developing and updating them; otherwise, support for apps and(or) custom integrations I no longer need will be discontinued.
 
 ## About
+
 Minecraft Java Edition Server tailored for Home Assistant OS, with full configuration
 through the Ingress web UI and worlds accessible via SFTP.
 
